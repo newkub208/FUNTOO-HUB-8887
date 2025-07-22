@@ -1,0 +1,140 @@
+-- โหลด Kavo UI
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("🐝 KI - Bee Swarm Hub", "DarkTheme")
+
+-- สร้างแท็บและเซกชัน
+local Tab = Window:NewTab("Main")
+local Section = Tab:NewSection("Auto Farm & Teleport")
+
+-- ตัวแปรหลัก
+local rs = game:GetService("ReplicatedStorage")
+local player = game.Players.LocalPlayer
+local humroot = player.Character and player.Character:FindFirstChild("HumanoidRootPart") or nil
+
+player.CharacterAdded:Connect(function(char)
+	humroot = char:WaitForChild("HumanoidRootPart")
+end)
+
+-- 🔁 Auto ToolCollect
+local autoTool = false
+Section:NewToggle("🔁 Auto ToolCollect (รัว)", "ยิง ToolCollect แบบรัว เปิด/ปิดได้", function(state)
+	autoTool = state
+	if autoTool then
+		task.spawn(function()
+			while autoTool do
+				rs:WaitForChild("Events"):WaitForChild("ToolCollect"):FireServer()
+				task.wait(0.1)
+			end
+		end)
+	end
+end)
+
+-- 🐻 วาร์ปไป Brown Bear
+Section:NewButton("🐻 วาร์ปไป Brown Bear", "วาร์ปไปที่วงกลมหมี Brown Bear", function()
+	local bb = workspace:FindFirstChild("NPCs") and workspace.NPCs:FindFirstChild("Brown Bear")
+	if bb and bb:FindFirstChild("Circle") and humroot then
+		humroot.CFrame = bb.Circle.CFrame + Vector3.new(0, 3, 0)
+	end
+end)
+
+-- 🌸 วาร์ปสุ่มไป Flowers ทุก 5.5 วิ (แบบค้างอยู่)
+local flowerTP = false
+Section:NewToggle("🌸 วาร์ปไปดอกไม้ (5.5s)", "สุ่มวาร์ปไปหา Flower แล้วอยู่ตรงนั้น", function(state)
+	flowerTP = state
+	if flowerTP then
+		task.spawn(function()
+			while flowerTP do
+				local flowers = workspace:FindFirstChild("Flowers")
+				if flowers then
+					local list = flowers:GetChildren()
+					if #list > 0 then
+						local pick = list[math.random(1, #list)]
+						if pick:IsA("BasePart") and humroot then
+							humroot.CFrame = pick.CFrame + Vector3.new(0, 3, 0)
+						end
+					end
+				end
+				task.wait(5.5)
+			end
+		end)
+	end
+end)
+
+-- 🍄 วาร์ปไป MushroomZone.Part (เห็ด)
+local actorTP = false
+Section:NewToggle("🍄 วาร์ปไปเห็ด (MushroomZone)", "วาร์ปไป MushroomZone.Part เปิด/ปิดได้", function(state)
+	actorTP = state
+	if actorTP then
+		task.spawn(function()
+			while actorTP do
+				local part = workspace:FindFirstChild("Territories") and workspace.Territories:FindFirstChild("MushroomZone") and workspace.Territories.MushroomZone:FindFirstChild("Part")
+				if part and part:IsA("BasePart") and humroot then
+					humroot.CFrame = part.CFrame + Vector3.new(0, 3, 0)
+				end
+				task.wait(2)
+			end
+		end)
+	end
+end)
+
+-- 🏡 ปุ่มกลับบ้าน (ไปที่ Paths[16])
+Section:NewButton("🏡 กลับบ้าน", "วาร์ปไป Paths[16]", function()
+	local paths = workspace:FindFirstChild("Paths")
+	if paths then
+		local home = paths:GetChildren()[16]
+		if home and home:IsA("BasePart") and humroot then
+			humroot.CFrame = home.CFrame + Vector3.new(0, 3, 0)
+		end
+	end
+end)
+
+-- 🔽 ปุ่มย่อ GUI
+local toggleButton = Instance.new("TextButton")
+toggleButton.Text = "🔽"
+toggleButton.Size = UDim2.new(0, 40, 0, 40)
+toggleButton.Position = UDim2.new(0, 10, 0, 10)
+toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+toggleButton.Font = Enum.Font.SourceSansBold
+toggleButton.TextSize = 20
+toggleButton.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Drag ปุ่มย่อ
+local dragging, dragInput, dragStart, startPos
+toggleButton.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = toggleButton.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+toggleButton.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		toggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+-- ซ่อน/แสดง GUI หลัก
+local CoreGui = game:GetService("CoreGui")
+local mainGui = CoreGui:FindFirstChild("KavoUI") or CoreGui:WaitForChild("KavoUI")
+local hidden = false
+
+toggleButton.MouseButton1Click:Connect(function()
+	hidden = not hidden
+	mainGui.Enabled = not hidden
+	toggleButton.Text = hidden and "🔼" or "🔽"
+end)
